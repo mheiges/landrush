@@ -1,12 +1,15 @@
 module Landrush
   module Action
+    # A module containing shared functionality for Vagrant middleware classes
     module Common
       SUPPORTED_PROVIDERS = {
         'VagrantPlugins::ProviderVirtualBox::Provider' => :virtualbox,
+        'VagrantPlugins::ProviderLibvirt::Provider'    => :libvirt,
         'HashiCorp::VagrantVMwarefusion::Provider'     => :vmware_fusion,
         'VagrantPlugins::Parallels::Provider'          => :parallels,
-        'Landrush::FakeProvider'                       => :fake_provider,
-      }
+        'VagrantPlugins::HyperV::Provider'             => :hyperv,
+        'Landrush::FakeProvider'                       => :fake_provider
+      }.freeze
 
       def self.included(base)
         base.send :attr_reader, :app, :env
@@ -14,18 +17,15 @@ module Landrush
 
       def initialize(app, env)
         @app = app
-      end
-
-      def handle_action_stack(env)
         @env = env
-
-        yield
-
-        app.call(env)
       end
 
       def virtualbox?
         provider == :virtualbox
+      end
+
+      def libvirt?
+        provider == :libvirt
       end
 
       def vmware?
@@ -37,11 +37,11 @@ module Landrush
       end
 
       def provider
-        provider_name = SUPPORTED_PROVIDERS.fetch(machine.provider.class.name) { |key|
+        provider_name = SUPPORTED_PROVIDERS.fetch(machine.provider.class.name) do |key|
           raise "The landrush plugin does not support the #{key} provider yet!"
-        }
+        end
 
-        if provider_name == :parallels and Gem::Version.new(VagrantPlugins::Parallels::VERSION) < Gem::Version.new("1.0.3")
+        if provider_name == :parallels && Gem::Version.new(VagrantPlugins::Parallels::VERSION) < Gem::Version.new('1.0.3')
           raise "The landrush plugin supports the Parallels provider v1.0.3 and later. Please, update your 'vagrant-parallels' plugin."
         end
 
@@ -67,9 +67,7 @@ module Landrush
       end
 
       def read_machine_hostname
-        if machine.config.vm.hostname
-          return machine.config.vm.hostname
-        end
+        return machine.config.vm.hostname if machine.config.vm.hostname
 
         "#{Pathname.pwd.basename}.#{config.tld}"
       end

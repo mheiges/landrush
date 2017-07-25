@@ -19,15 +19,16 @@ Gem::Specification.new do |spec|
     and down, and you can configure static entries to be returned from the
     server as well. See the README for more documentation.
   DESCRIP
-  spec.summary       = %q{a vagrant plugin providing consistent DNS visible on host and guests}
-  spec.homepage      = 'https://github.com/phinze/landrush'
+  spec.summary       = 'a vagrant plugin providing consistent DNS visible on host and guests'
+  spec.homepage      = 'https://github.com/vagrant-landrush/landrush'
   spec.license       = 'MIT'
 
-  spec.files         = `git ls-files`.split($/)
+  spec.files         = `git ls-files`.split($INPUT_RECORD_SEPARATOR)
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ['lib']
 
-  spec.add_dependency 'rubydns', '1.0.2'
-  spec.add_dependency 'rexec'
+  spec.add_dependency 'rubydns', '0.8.5'
+  spec.add_dependency 'win32-process'
+  spec.add_dependency 'landrush-ip', '~> 0.2.5'
 end

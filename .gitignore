@@ -1,20 +1,22 @@
-*.gem
-*.rbc
-.bundle
-.config
-.yardoc
+# Bundler
 Gemfile.lock
-InstalledFiles
+.bundle
+
+# Ruby / RVM
+.ruby-gemset
+.ruby-version
+
+# Rake / Build
+.yardoc
 _yardoc
 coverage
 lib/bundler/man
 pkg
 rdoc
 spec/reports
-test/tmp
-test/version_tmp
+build
 tmp
-tags
 
-.vagrant
-.vagrant_dns.json
+# IDE
+*.iml
+.idea

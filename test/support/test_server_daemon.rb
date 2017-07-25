@@ -1,40 +1,43 @@
 # Set test port so there's nothing colliding
-Landrush::Server.port = 11153
+Landrush::Server.port = 111_53
 
 module SilenceOutput
-  def silence
-    orig_out, orig_err = $stdout, $stderr
-    $stdout, $stderr   = StringIO.new, StringIO.new
-
+  def self.silence
+    orig_out = $stdout
+    orig_err = $stderr
+    $stdout = StringIO.new
+    $stderr = StringIO.new
     yield
   ensure
     $stdout = orig_out
     $stderr = orig_err
   end
 
-  def start
-    silence { super }
-  end
-
-  def stop
-    silence { super }
+  def self.included(base)
+    orig_stop_method = base.method(:stop)
+    base.define_singleton_method :stop do
+      SilenceOutput.silence { orig_stop_method.call }
+    end
   end
 end
 
-class Landrush::Server
-  extend SilenceOutput
+module Landrush
+  class Server
+    include SilenceOutput
+  end
 end
 
 module TestServerHooks
   def teardown
     super
     # Cleanup any stray server instances from tests
-    if Landrush::Server.running?
-      Landrush::Server.stop
-    end
+    Landrush::Server.stop if Landrush::Server.running?
+    Landrush::Store.reset
   end
 end
 
-class MiniTest::Spec
-  include TestServerHooks
+module MiniTest
+  class Spec
+    include TestServerHooks
+  end
 end

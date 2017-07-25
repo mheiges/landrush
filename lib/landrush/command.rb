@@ -1,36 +1,29 @@
 module Landrush
   class Command < Vagrant.plugin('2', :command)
-    DAEMON_COMMANDS = %w(start stop restart status)
+    DAEMON_COMMANDS = %w(start stop restart status).freeze
 
     def self.synopsis
-      "manages DNS for both guest and host"
+      'manages DNS for both guest and host'
     end
 
     def execute
-      ARGV.shift # flush landrush from ARGV, RExec wants to use it for daemon commands
+      # Make sure we use the right data directory for Landrush
+      Server.working_dir = File.join(@env.data_dir, 'landrush')
+      Server.gems_dir = File.join(@env.gems_path, 'gems')
+      Server.ui = @env.ui
 
+      ARGV.shift # flush landrush from ARGV
       command = ARGV.first || 'help'
       if DAEMON_COMMANDS.include?(command)
-        Server.daemonize
+        Server.send(command)
       elsif command == 'dependentvms' || command == 'vms'
-        if DependentVMs.any?
-          @env.ui.info(DependentVMs.list.map { |dvm| " - #{dvm}" }.join("\n"))
-        else
-          @env.ui.info("No dependent VMs")
-        end
+        dependent_vms
       elsif command == 'ls' || command == 'list'
-        IO.popen("/usr/bin/pr -2 -t -a", "w") do |io|
-          Landrush::Store.hosts.each do |key, value|
-            io.puts "#{key}"
-            io.puts "#{value}"
-          end
-        end
+        store_ls
       elsif command == 'set'
-        host, ip = ARGV[1,2]
-        Landrush::Store.hosts.set(host, ip)
+        store_set
       elsif command == 'del' || command == 'rm'
-        key = ARGV[1]
-        Landrush::Store.hosts.delete(key)
+        store_del
       elsif command == 'help'
         @env.ui.info(help)
       else
@@ -41,7 +34,7 @@ module Landrush
     end
 
     def boom(msg)
-      raise Vagrant::Errors::CLIInvalidOptions, :help => usage(msg)
+      raise Vagrant::Errors::CLIInvalidOptions, help: usage(msg)
     end
 
     def usage(msg); <<-EOS.gsub(/^      /, '')
@@ -63,13 +56,43 @@ module Landrush
           list vms currently dependent on the landrush server
         set { <host> <ip> | <alias> <host> }
           adds the given host-to-ip or alias-to-hostname mapping.
-          existing host ip addresses will be overwritten
-        rm, del { <host> | <alias> }
-          delete the given hostname or alias from the server
+          Existing host ip addresses will be overwritten
+        rm, del { <host> | <alias> | --all }
+          delete the given hostname or alias from the server.
+          --all removes all entries
         help
           you're lookin at it!
       EOS
     end
 
+    private
+
+    def dependent_vms
+      if DependentVMs.any?
+        @env.ui.info(DependentVMs.list.map { |dvm| " - #{dvm}" }.join("\n"))
+      else
+        @env.ui.info('No dependent VMs')
+      end
+    end
+
+    def store_del
+      key = ARGV[1]
+      if key == '--all'
+        Landrush::Store.hosts.clear!
+      else
+        Landrush::Store.hosts.delete(key)
+      end
+    end
+
+    def store_set
+      host, ip = ARGV[1, 2]
+      Landrush::Store.hosts.set(host, ip)
+    end
+
+    def store_ls
+      Landrush::Store.hosts.each do |key, value|
+        printf "%-30s %s\n", key, value
+      end
+    end
   end
 end

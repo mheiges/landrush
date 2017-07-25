@@ -1,25 +1,23 @@
 source 'https://rubygems.org'
 
-# Can't use `gemspec` to pull in dependencies, because the landrush gem needs
-# to be in the :plugins group for Vagrant to detect and load it in development
-
-gem 'rubydns', '1.0.2'
-gem 'rexec'
-gem 'rake'
-
 # Vagrant's special group
 group :plugins do
-  gem 'landrush', path: '.'
-end
-
-group :test do
+  gemspec
 end
 
 group :development do
   gem 'vagrant',
-    :git => 'git://github.com/mitchellh/vagrant.git',
-    :ref => 'v1.7.1'
-
+      git: 'https://github.com/mitchellh/vagrant.git',
+      ref: 'v1.8.6'
+  gem 'rake', '~> 10'
+  gem 'rubocop', '~> 0.38.0'
   gem 'byebug'
   gem 'mocha'
+  gem 'minitest'
+  gem 'cucumber', '~> 2.1'
+  gem 'aruba', '~> 0.13'
+  gem 'komenda', '~> 0.1.6'
+  gem 'guard-rake'
+  gem 'guard-livereload', '~> 2.5', require: false
+  gem 'asciidoctor'
 end

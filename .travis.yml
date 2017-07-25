@@ -1,9 +1,29 @@
 language: ruby
 
-rvm:
-  - 2.0.0
-
 before_install:
-  - sudo apt-get update
-  - sudo apt-get install dnsutils
-  - rvm @global do gem uninstall bundler -x && gem install bundler -v '~> 1.5.2'  # For Vagrant 1.5
+- rvm gemset use global
+- gem uninstall bundler -Iax --version '<1.14'
+- gem install bundler -v 1.12.5
+
+script:
+- bundle exec rake clean rubocop test install TESTOPTS='--verbose'
+
+cache: bundler
+
+rvm:
+  - 2.2
+
+sudo: required
+
+addons:
+  apt:
+    packages:
+    - dnsutils
+
+env:
+  global:
+    - NOKOGIRI_USE_SYSTEM_LIBRARIES=true
+
+notifications:
+  email:
+    on_success: never
